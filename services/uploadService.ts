@@ -86,7 +86,9 @@ export const uploadToAppsScript = async (url: string, entry: PlantEntry): Promis
   const safeY = Number.isFinite(entry.y) ? entry.y : NaN;
   const safeCoordText = buildCoordText(safeX, safeY);
   const originalCoordText = String(entry.rawKoordinat || '').trim() || safeCoordText;
-  const revisedCoordText = String(entry.revisedKoordinat || '').trim() || String(entry.koordinat || '').trim() || safeCoordText;
+  const revisedRawText = String(entry.revisedKoordinat || '').trim();
+  const revisedCoordText = entry.snappedToGrid && revisedRawText ? revisedRawText : '';
+  const mainCoordText = revisedCoordText || originalCoordText;
 
   // Teks path yang akan digunakan sebagai nama file di Drive dan referensi di Sheet
   const pathName = `Montana V2_Images/Gambar Montana (${entry.id}).jpg`;
@@ -112,9 +114,10 @@ export const uploadToAppsScript = async (url: string, entry: PlantEntry): Promis
     "Lokasi": entry.lokasi?.includes('NaN') ? safeCoordText : entry.lokasi,
     "Pekerjaan": entry.pekerjaan || "",
     "Tinggi": entry.tinggi,
-    "Koordinat": revisedCoordText.includes('NaN') ? safeCoordText : revisedCoordText,
+    "Koordinat": mainCoordText.includes('NaN') ? safeCoordText : mainCoordText,
     "Koordinat_Asli": originalCoordText,
     "Koordinat_Revisi": revisedCoordText,
+    "Snapped_To_Grid": entry.snappedToGrid ? '1' : '0',
     "Y": formatCoord(safeY), // Longitude
     "X": formatCoord(safeX), // Latitude
     "Tanaman": entry.tanaman,
@@ -132,6 +135,7 @@ export const uploadToAppsScript = async (url: string, entry: PlantEntry): Promis
     "Kesehatan": entry.kesehatan,
     "AI_Kesehatan": entry.aiKesehatan || '',
     "AI_Confidence": Number.isFinite(entry.aiConfidence as number) ? Number(entry.aiConfidence).toFixed(2) : '',
+    "AI_Deskripsi": entry.aiDeskripsi || '',
     "HCV_Input": Number.isFinite(entry.hcvInput as number) ? Number(entry.hcvInput).toFixed(2) : '',
     "GPS_Quality": entry.gpsQualityAtCapture || 'Tidak Tersedia',
     "GPS_Accuracy_M": Number.isFinite(entry.gpsAccuracyAtCapture) ? Number(entry.gpsAccuracyAtCapture).toFixed(1) : '',

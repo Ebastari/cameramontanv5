@@ -156,3 +156,57 @@ export const analyzePlantHealthHSV = (
     confidence,
   };
 };
+
+/**
+ * Menghasilkan deskripsi ilmiah dari hasil analisis kesehatan tanaman berbasis HSV.
+ * Menjelaskan metode, parameter spektral, dan interpretasi confidence.
+ */
+export const generateHealthDescription = (result: PlantHealthResult): string => {
+  const { hue, saturation, value, health, confidence } = result;
+
+  // Interpretasi saturasi klorofil
+  const satPct = round(saturation * 100);
+  const satLabel = satPct >= 50 ? 'tinggi' : satPct >= 25 ? 'sedang' : 'rendah';
+
+  // Interpretasi kecerahan (value) — reflektansi NIR proxy
+  const valPct = round(value * 100);
+  const valLabel = valPct >= 60 ? 'baik' : valPct >= 35 ? 'cukup' : 'lemah';
+
+  // Interpretasi hue — spektrum dominan
+  let hueDesc: string;
+  if (hue >= 65 && hue <= 160) {
+    hueDesc = `hijau dominan (H=${hue}\u00B0), menunjukkan klorofil aktif dan fotosintesis berjalan normal`;
+  } else if (hue >= 25 && hue < 65) {
+    hueDesc = `kuning-hijau (H=${hue}\u00B0), mengindikasikan klorosis parsial atau senescence awal`;
+  } else {
+    hueDesc = `coklat-merah (H=${hue}\u00B0), menandakan nekrosis jaringan atau kehilangan pigmen klorofil`;
+  }
+
+  // Interpretasi confidence
+  let confDesc: string;
+  if (confidence >= 80) {
+    confDesc = `Tingkat keyakinan ${confidence}% (tinggi) — distribusi piksel vegetasi konsisten dan terkonsentrasi pada satu kelas spektral`;
+  } else if (confidence >= 50) {
+    confDesc = `Tingkat keyakinan ${confidence}% (sedang) — sebagian piksel menunjukkan variasi spektral antar kelas kesehatan`;
+  } else {
+    confDesc = `Tingkat keyakinan ${confidence}% (rendah) — distribusi spektral tersebar, kemungkinan noise atau campuran objek non-vegetasi`;
+  }
+
+  // Interpretasi kesehatan
+  const healthMap: Record<string, string> = {
+    Sehat: 'SEHAT — kanopi menunjukkan reflektansi hijau kuat, konsisten dengan vegetasi vigor tinggi',
+    Merana: 'MERANA (STRESS) — penurunan reflektansi hijau terdeteksi, potensi defisiensi nutrisi atau tekanan air',
+    Mati: 'MATI/KRITIS — reflektansi hijau minimal, jaringan didominasi pigmen non-fotosintetik',
+  };
+
+  return [
+    `Analisis Spektral HSV (Hue-Saturation-Value):`,
+    `Metode: Segmentasi piksel vegetasi pada ROI elips tengah frame, threshold S\u22650.20 V\u22650.15 H\u2208[25\u00B0-170\u00B0].`,
+    `Hue rata-rata: ${hueDesc}.`,
+    `Saturasi: ${satPct}% (${satLabel}) — proxy densitas klorofil.`,
+    `Kecerahan: ${valPct}% (${valLabel}) — proxy reflektansi kanopi.`,
+    `Klasifikasi: ${healthMap[health]}.`,
+    `${confDesc}.`,
+    `HCV Score: ${round(confidence * (health === 'Sehat' ? 1 : health === 'Merana' ? 0.5 : 0))}% — indeks komposit konservasi kesehatan vegetasi.`,
+  ].join(' ');
+};

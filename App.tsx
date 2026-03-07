@@ -10,7 +10,7 @@ import { PlantEntry, GpsLocation, ToastState, FormState } from './types';
 import { Toast } from './components/Toast';
 import { getAllEntries, saveEntry, updateEntrySyncMeta, clearAllEntries } from './services/dbService';
 import { checkInternetConnection } from './services/networkService';
-import type { PlantHealthResult } from './ecology/plantHealth';
+import { generateHealthDescription, type PlantHealthResult } from './ecology/plantHealth';
 
 const RETRY_BASE_DELAY_MS = 15000;
 const RETRY_MAX_DELAY_MS = 5 * 60 * 1000;
@@ -35,8 +35,10 @@ const dataUrlToFile = async (dataUrl: string, fileName: string): Promise<File> =
 
 const GPS_ACCURACY_THRESHOLD_M = 20;
 const DESKTOP_GPS_ACCURACY_THRESHOLD_M = 60;
-const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcxJ2nTJpVqECVPkDhNo5ulpsL0G2KSdiwoOqpJeIBASVq_K3mFGpviIXDhPzcdre3sw/exec';
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyOLIVrNrxyFIJHklKTUFEX-ckqPaORCo9ga6n7d_FGct5v01o5ZqD44bWj138zcTq49Q/exec';
 const LEGACY_APPS_SCRIPT_URLS = [
+  'https://script.google.com/macros/s/AKfycbzLvcetpQNfIl0NF_L5sfUxUq7vgcVDfCcfHfqif7SJZtSwYZ3jfwjbBX89EcjV5rg8kw/exec',
+  'https://script.google.com/macros/s/AKfycbxcxJ2nTJpVqECVPkDhNo5ulpsL0G2KSdiwoOqpJeIBASVq_K3mFGpviIXDhPzcdre3sw/exec',
   'https://script.google.com/macros/s/AKfycbwv1eXbUMODTxqoUrxuN2ezFb0E6E34hdJvmLHclmIC5v76yrnT5PvUuthYQahcaskwjA/exec',
   'https://script.google.com/macros/s/AKfycbw_B-b96eu94j562hLAYKTMLLe9XhTMDS5JhL_GoPzb5OGpDrQ2JHfaiPgXW4lUbMwV_Q/exec',
   'https://script.google.com/macros/s/AKfycbxPDvlK5Xk2WgcEsbqZtUH-k69_Xj3oXU8ciOJP8Y3e0twb4O-T1rNwLWUUTsTt2tmu9A/exec',
@@ -555,7 +557,7 @@ const App: React.FC = () => {
       gpsQualityAtCapture,
       gpsAccuracyAtCapture: hasValidGps ? gps.accuracy : undefined,
       rawKoordinat: `${rawLat.toFixed(6)},${rawLon.toFixed(6)}`,
-      revisedKoordinat: `${lat.toFixed(6)},${lon.toFixed(6)}`,
+      revisedKoordinat: snappedCoordinate ? `${lat.toFixed(6)},${lon.toFixed(6)}` : undefined,
       gridAnchorKoordinat: anchorForCapture
         ? `${anchorForCapture.lat.toFixed(6)},${anchorForCapture.lon.toFixed(6)}`
         : undefined,
@@ -567,6 +569,7 @@ const App: React.FC = () => {
       statusDuplikat: "UNIK",
       aiKesehatan: aiHealth?.health,
       aiConfidence: Number.isFinite(aiConfidence) ? aiConfidence : undefined,
+      aiDeskripsi: aiHealth ? generateHealthDescription(aiHealth) : undefined,
       hcvInput,
     };
 

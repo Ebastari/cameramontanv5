@@ -38,23 +38,13 @@ const DEFAULT_HEADERS = [
   'Kesehatan',
   'AI_Kesehatan',
   'AI_Confidence',
+  'AI_Deskripsi',
   'HCV_Input',
   'poop',
   'Status_Duplikat',
   'Eco_BiomassaKg',
   'Eco_KarbonKgC',
-  'Eco_JarakTerdekatM',
-  'Eco_SesuaiJarak',
-  'Eco_KepadatanHa',
-  'Eco_CCI',
-  'Eco_CCI_Grade',
-  'Eco_AreaHa',
-  'Eco_JarakRata2M',
-  'Eco_JarakStdM',
-  'Eco_KesesuaianJarakPct',
-  'Eco_GpsMedianM',
-  'Eco_UpdatedAt',
-];
+  ];
 
 function doGet(e) {
   try {
@@ -308,6 +298,7 @@ function appendMonitoringRow_(sheet, payload) {
   const aiKesehatanRaw = String(payload.AI_Kesehatan || payload.aiKesehatan || '').trim();
   const aiKesehatan = aiKesehatanRaw ? normalizeHealth_(aiKesehatanRaw) : '';
   const aiConfidence = toNumberOrBlank_(payload.AI_Confidence ?? payload.aiConfidence);
+  const aiDeskripsi = String(payload.AI_Deskripsi || payload.aiDeskripsi || '').trim();
   const hcvInput = toNumberOrBlank_(payload.HCV_Input ?? payload.hcvInput);
 
   const coords = resolveCoordinates_(payload);
@@ -315,6 +306,7 @@ function appendMonitoringRow_(sheet, payload) {
   const koordinatRaw = String(payload.Koordinat || payload.koordinat || payload.Koordinat_Revisi || payload.koordinatRevisi || coords.text).trim();
   const koordinatAsliRaw = String(payload.Koordinat_Asli || payload.koordinatAsli || payload.rawKoordinat || '').trim();
   const koordinatRevisiRaw = String(payload.Koordinat_Revisi || payload.koordinatRevisi || '').trim();
+  const snappedToGrid = toBoolean_(payload.Snapped_To_Grid !== undefined ? payload.Snapped_To_Grid : payload.snappedToGrid);
   const lokasi = lokasiRaw.toLowerCase().includes('nan') ? coords.text : lokasiRaw;
   const koordinatUser = koordinatRaw.toLowerCase().includes('nan') ? coords.text : koordinatRaw;
 
@@ -330,19 +322,29 @@ function appendMonitoringRow_(sheet, payload) {
   );
   const originalFixed = originalFixedFromPayload || originalFixedFallback;
 
-  const revisedFixedFromPayload = getFixedLatLon_(
-    payload.X !== undefined ? payload.X : coords.lat,
-    payload.Y !== undefined ? payload.Y : coords.lon,
-    koordinatRevisiRaw || koordinatUser || lokasi,
-  );
-  const revisedFixed = revisedFixedFromPayload || computeRevisedCoordinate_(sheet, headerIndex, originalFixed);
+  // Prioritas revisi: X/Y revisi eksplisit -> string koordinat revisi -> hitung otomatis.
+  const revisedFixedFromPayload = snappedToGrid
+    ? getFixedLatLon_(
+        payload.X_Revisi !== undefined ? payload.X_Revisi : payload.xRevisi,
+        payload.Y_Revisi !== undefined ? payload.Y_Revisi : payload.yRevisi,
+        koordinatRevisiRaw,
+      )
+    : null;
+  const revisedFixedFromText = snappedToGrid && koordinatRevisiRaw
+    ? getFixedLatLon_('', '', koordinatRevisiRaw)
+    : null;
+  const revisedFixed = snappedToGrid
+    ? (revisedFixedFromPayload || revisedFixedFromText || computeRevisedCoordinate_(sheet, headerIndex, originalFixed) || originalFixed)
+    : null;
 
   const koordinatAsli = originalFixed
     ? toCoordinateText_(originalFixed.lat, originalFixed.lon)
     : (koordinatAsliRaw || koordinatUser);
-  const koordinatRevisi = revisedFixed
-    ? toCoordinateText_(revisedFixed.lat, revisedFixed.lon)
-    : (koordinatRevisiRaw || koordinatAsli);
+  const koordinatRevisi = snappedToGrid
+    ? (revisedFixed
+      ? toCoordinateText_(revisedFixed.lat, revisedFixed.lon)
+      : (koordinatRevisiRaw || ''))
+    : '';
   const koordinat = koordinatRevisi || koordinatAsli || koordinatUser;
 
   // Y dipertahankan sebagai longitude, X sebagai latitude agar kompatibel data lama aplikasi.
@@ -388,6 +390,7 @@ function appendMonitoringRow_(sheet, payload) {
   setByHeader_(row, headerIndex, 'Kesehatan', kesehatan);
   setByHeader_(row, headerIndex, 'AI_Kesehatan', aiKesehatan);
   setByHeader_(row, headerIndex, 'AI_Confidence', aiConfidence);
+  setByHeader_(row, headerIndex, 'AI_Deskripsi', aiDeskripsi);
   setByHeader_(row, headerIndex, 'HCV_Input', hcvInput);
   setByHeader_(row, headerIndex, 'poop', poop);
   setByHeader_(row, headerIndex, 'Status_Duplikat', statusDuplikat);
@@ -2023,6 +2026,19 @@ function toNumber_(value) {
 function toNumberOrBlank_(value) {
   const num = toNumber_(value);
   return Number.isFinite(num) ? num : '';
+}
+
+function toBoolean_(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) {
+    return false;
+  }
+
+  return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'y' || raw === 'on';
 }
 
 function normalizeCoordText_(value) {

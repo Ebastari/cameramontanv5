@@ -487,6 +487,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
                   [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white" 
               />
             </div>
+
           </div>
 
           <div className="px-2 -mt-1">

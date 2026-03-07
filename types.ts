@@ -41,6 +41,7 @@ export interface PlantEntry {
   statusVerifikasi?: string;
   aiKesehatan?: 'Sehat' | 'Merana' | 'Mati';
   aiConfidence?: number;
+  aiDeskripsi?: string;
   hcvInput?: number;
 }
 
