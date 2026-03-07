@@ -54,7 +54,7 @@ const createEcologyPrompt = (metrics: any): string => {
   ].join('\n');
 };
 
-const ecologySummaryPlugin = (deepseekApiKey: string) => {
+const ecologySummaryPlugin = (deepseekApiKey: string, analysisPassword: string) => {
   const handler = async (req: any, res: any) => {
     if (req.method !== 'POST') {
       sendJson(res, 405, { error: 'Method Not Allowed' });
@@ -67,6 +67,13 @@ const ecologySummaryPlugin = (deepseekApiKey: string) => {
     }
 
     const body = await parseJsonBody(req);
+    const submittedPassword = typeof body?.password === 'string' ? body.password : '';
+    const requiredPassword = analysisPassword || 'agungganteng';
+    if (submittedPassword !== requiredPassword) {
+      sendJson(res, 401, { error: 'Password analisis tidak valid.' });
+      return;
+    }
+
     const prompt = createEcologyPrompt(body?.metrics || {});
 
     try {
@@ -129,6 +136,7 @@ const ecologySummaryPlugin = (deepseekApiKey: string) => {
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     const deepseekApiKey = env.DEEPSEEK_API_KEY || '';
+  const analysisPassword = env.ANALYSIS_PASSWORD || 'agungganteng';
 
     return {
       server: {
@@ -136,7 +144,7 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
         https: mode === 'https',
       },
-      plugins: [react(), ecologySummaryPlugin(deepseekApiKey)],
+      plugins: [react(), ecologySummaryPlugin(deepseekApiKey, analysisPassword)],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)

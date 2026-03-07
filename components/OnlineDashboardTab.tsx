@@ -9,6 +9,9 @@ interface OnlineDashboardTabProps {
 
 export const OnlineDashboardTab: React.FC<OnlineDashboardTabProps> = ({ appsScriptUrl, isOnline }) => {
   const ANALYSIS_PASSWORD = 'agungganteng';
+  const SUMMARY_API_ENDPOINT =
+    (import.meta.env.VITE_ECOLOGY_SUMMARY_API_URL as string | undefined)?.trim() ||
+    '/api/ecology-summary';
 
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -133,12 +136,15 @@ export const OnlineDashboardTab: React.FC<OnlineDashboardTabProps> = ({ appsScri
     setIsAnalyzing(true);
     setAnalysisError(null);
     try {
-      const response = await fetch('/api/ecology-summary', {
+      const response = await fetch(SUMMARY_API_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ metrics: ecologyMetrics }),
+        body: JSON.stringify({
+          password: unlockInput,
+          metrics: ecologyMetrics,
+        }),
       });
 
       const contentType = response.headers.get('content-type') || '';
@@ -186,7 +192,7 @@ export const OnlineDashboardTab: React.FC<OnlineDashboardTabProps> = ({ appsScri
       return;
     }
     void requestAiSummary();
-  }, [isUnlocked, dataFingerprint]);
+  }, [isUnlocked, dataFingerprint, SUMMARY_API_ENDPOINT]);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
