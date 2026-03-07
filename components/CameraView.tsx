@@ -3,7 +3,6 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { getCameraDevices, startCamera } from '../services/cameraService';
 import { GpsLocation, FormState } from '../types';
 import { Compass } from './Compass';
-import { InfoOverlay } from './InfoOverlay';
 import { analyzePlantHealthHSV, type PlantHealthResult } from '../ecology/plantHealth';
 
 interface CameraViewProps {
@@ -362,14 +361,14 @@ export const CameraView: React.FC<CameraViewProps> = ({
             href="https://www.montana-tech.info/" 
             target="_blank"
             rel="noopener noreferrer"
-            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-xl active:scale-90 transition-all hover:bg-black/60"
+            className="w-10 h-10 rounded-full bg-black/15 backdrop-blur-sm border border-white/5 text-white/70 flex items-center justify-center shadow-lg active:scale-90 transition-all hover:bg-black/30"
           >
             <IconHome />
           </a>
         </div>
 
         <div className="flex flex-col items-end gap-2 pointer-events-auto max-w-[220px]">
-          <div className="w-full bg-black/35 backdrop-blur-md px-3 py-2 rounded-2xl border border-white/10 shadow-lg">
+          <div className="w-full bg-black/15 backdrop-blur-sm px-3 py-2 rounded-2xl border border-white/5 shadow-md">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">Progress</span>
               <span className="text-[10px] font-bold text-white">{entriesCount}/{DAILY_TARGET}</span>
@@ -432,14 +431,14 @@ export const CameraView: React.FC<CameraViewProps> = ({
 
           <div className="flex items-center gap-1.5">
             {!gps && (
-              <div className="bg-red-500/20 backdrop-blur-md px-2 py-1 rounded-lg border border-red-500/30 flex items-center gap-2 animate-pulse">
+              <div className="bg-red-500/10 backdrop-blur-sm px-2 py-1 rounded-lg border border-red-500/15 flex items-center gap-2 animate-pulse">
                 <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                 <span className="text-[7px] font-black text-red-200 uppercase tracking-widest">GPS SEARCHING</span>
               </div>
             )}
 
             {livePlantHealth && (
-              <div className="bg-black/35 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 flex items-center gap-2">
+              <div className="bg-black/15 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/5 flex items-center gap-2">
                 <span
                   className={`text-[7px] font-black uppercase tracking-widest ${
                     livePlantHealth.health === 'Sehat'
@@ -458,7 +457,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
         </div>
       </div>
 
-      <InfoOverlay formState={formState} entriesCount={entriesCount} gps={gps} liveHealth={livePlantHealth} />
+      {/* InfoOverlay removed — info already shown in top-right panel and bottom controls */}
       
       <div className="absolute bottom-0 left-0 right-0 z-40 safe-bottom">
         <div className="mx-3 sm:mx-4 mb-3 sm:mb-6 space-y-3 sm:space-y-4">
@@ -491,7 +490,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
           </div>
 
           <div className="px-2 -mt-1">
-            <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-1.5 px-2 rounded-2xl bg-black/20 backdrop-blur-md border border-white/10 shadow-lg">
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-1.5 px-2 rounded-2xl bg-black/10 backdrop-blur-sm border border-white/5 shadow-md">
               {PLANT_TYPES.map(type => (
                 <button
                   key={type}
@@ -511,7 +510,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
           <div className="flex justify-between items-center px-2 pt-1">
             <button 
               onClick={onShowSheet} 
-              className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center shadow-xl active:scale-90 transition-all hover:bg-black/60"
+              className="w-14 h-14 rounded-full bg-black/15 backdrop-blur-sm border border-white/5 text-white/70 flex items-center justify-center shadow-lg active:scale-90 transition-all hover:bg-black/30"
             >
               <IconPanel />
             </button>
@@ -539,7 +538,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
 
             <button 
               onClick={handleSwitchCamera} 
-              className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center shadow-xl active:scale-90 transition-all hover:bg-black/60"
+              className="w-14 h-14 rounded-full bg-black/15 backdrop-blur-sm border border-white/5 text-white/70 flex items-center justify-center shadow-lg active:scale-90 transition-all hover:bg-black/30"
             >
               <IconSwitchCamera />
             </button>
