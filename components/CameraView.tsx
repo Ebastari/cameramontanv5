@@ -251,9 +251,12 @@ export const CameraView: React.FC<CameraViewProps> = ({ onCapture, formState, on
         const size = 160;
         canvas.width = size;
         canvas.height = size;
-        context.drawImage(v, 0, 0, size, size);
+        const side = Math.min(v.videoWidth, v.videoHeight);
+        const sx = Math.max(0, (v.videoWidth - side) / 2);
+        const sy = Math.max(0, (v.videoHeight - side) / 2);
+        context.drawImage(v, sx, sy, side, side, 0, 0, size, size);
         const imageData = context.getImageData(0, 0, size, size);
-        const result = analyzePlantHealthHSV(imageData);
+        const result = analyzePlantHealthHSV(imageData, { centerFocus: true });
         setLivePlantHealth(result);
       } catch {
         // Abaikan frame error sesaat saat stream berubah.

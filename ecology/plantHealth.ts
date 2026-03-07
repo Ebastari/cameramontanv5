@@ -6,6 +6,10 @@ export interface PlantHealthResult {
   confidence: number;
 }
 
+interface PlantHealthOptions {
+  centerFocus?: boolean;
+}
+
 interface HSV {
   h: number;
   s: number;
@@ -59,20 +63,48 @@ const round = (value: number, decimals = 2): number => {
   return Math.round(value * p) / p;
 };
 
-export const analyzePlantHealthHSV = (imageData: ImageData): PlantHealthResult => {
+export const analyzePlantHealthHSV = (
+  imageData: ImageData,
+  options: PlantHealthOptions = {},
+): PlantHealthResult => {
   const pixels = imageData.data;
   const step = 4;
+  const width = imageData.width;
+  const height = imageData.height;
+
+  const centerFocus = options.centerFocus ?? true;
+  const cx = width / 2;
+  const cy = height / 2;
+  const radiusX = width * 0.35;
+  const radiusY = height * 0.35;
 
   let count = 0;
   let hueSum = 0;
   let satSum = 0;
   let valSum = 0;
 
+  let selectedCount = 0;
+  let selectedSatSum = 0;
+  let selectedValSum = 0;
+
   // Batasi analisis ke piksel yang cukup berwarna agar hasil kesehatan lebih stabil.
   const candidateHues: number[] = [];
   const bins = new Array<number>(36).fill(0);
 
   for (let i = 0; i < pixels.length; i += step) {
+    const pixelIndex = i / 4;
+    const x = pixelIndex % width;
+    const y = Math.floor(pixelIndex / width);
+
+    if (centerFocus) {
+      const nx = (x - cx) / radiusX;
+      const ny = (y - cy) / radiusY;
+      // Mask elips tengah untuk menekan pengaruh background di tepi frame.
+      if (nx * nx + ny * ny > 1) {
+        continue;
+      }
+    }
+
     const alpha = pixels[i + 3];
     if (alpha === 0) {
       continue;
@@ -84,9 +116,13 @@ export const analyzePlantHealthHSV = (imageData: ImageData): PlantHealthResult =
     satSum += s;
     valSum += v;
 
-    if (s >= 0.15 && v >= 0.1) {
+    // Kandidat vegetasi: cukup jenuh, cukup terang, dan berada di spektrum hijau-kuning tanaman.
+    if (s >= 0.2 && v >= 0.15 && h >= 25 && h <= 170) {
       candidateHues.push(h);
       bins[Math.min(35, Math.floor(h / 10))] += 1;
+      selectedCount += 1;
+      selectedSatSum += s;
+      selectedValSum += v;
     }
   }
 
@@ -102,8 +138,8 @@ export const analyzePlantHealthHSV = (imageData: ImageData): PlantHealthResult =
 
   const sourceHues = candidateHues.length > 0 ? candidateHues : [hueSum / count];
   const hue = sourceHues.reduce((acc, cur) => acc + cur, 0) / sourceHues.length;
-  const saturation = satSum / count;
-  const value = valSum / count;
+  const saturation = selectedCount > 0 ? selectedSatSum / selectedCount : satSum / count;
+  const value = selectedCount > 0 ? selectedValSum / selectedCount : valSum / count;
   const health = classifyHealthByHue(hue);
 
   const inClassCount = sourceHues.filter((h) => classifyHealthByHue(h) === health).length;
